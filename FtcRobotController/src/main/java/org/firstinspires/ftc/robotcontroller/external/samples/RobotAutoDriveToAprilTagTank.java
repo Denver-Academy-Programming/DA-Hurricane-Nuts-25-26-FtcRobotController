@@ -94,10 +94,10 @@ public class RobotAutoDriveToAprilTagTank extends LinearOpMode
     //  Set the GAIN constants to control the relationship between the measured position error, and how much power is
     //  applied to the drive motors to correct the error.
     //  Drive = Error * Gain    Make these values smaller for smoother control, or larger for a more aggressive response.
-    final double SPEED_GAIN =   0.02 ;   //  Speed Control "Gain". e.g. Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
+    final double SPEED_GAIN =   0.01 ;   //  Speed Control "Gain". e.g. Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
     final double TURN_GAIN  =   0.01 ;   //  Turn Control "Gain".  e.g. Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
 
-    final double MAX_AUTO_SPEED = 0.5;   //  Clip the approach speed to this max value (adjust for your robot)
+    final double MAX_AUTO_SPEED = 0.50;   //  Clip the approach speed to this max value (adjust for your robot)
     final double MAX_AUTO_TURN  = 0.25;  //  Clip the turn speed to this max value (adjust for your robot)
 
     private DcMotor leftDrive   = null;  //  Used to control the left drive wheel
@@ -121,8 +121,8 @@ public class RobotAutoDriveToAprilTagTank extends LinearOpMode
         // Initialize the hardware variables. Note that the strings used here as parameters
         // to 'get' must match the names assigned during the robot configuration.
         // step (using the FTC Robot Controller app on the phone).
-        leftDrive  = hardwareMap.get(DcMotor.class, "left_drive");
-        rightDrive = hardwareMap.get(DcMotor.class, "right_drive");
+        leftDrive  = hardwareMap.get(DcMotor.class, "frontLeftDrive");
+        rightDrive = hardwareMap.get(DcMotor.class, "frontRightDrive");
 
         // To drive forward, most robots need the motor on one side to be reversed because the axles point in opposite directions.
         // When run, this OpMode should start both motors driving forward. So adjust these two lines based on your first test drive.
@@ -169,8 +169,18 @@ public class RobotAutoDriveToAprilTagTank extends LinearOpMode
             if (targetFound) {
                 telemetry.addData("\n>","HOLD Left-Bumper to Drive to Target\n");
                 telemetry.addData("Found", "ID %d (%s)", desiredTag.id, desiredTag.metadata.name);
-                telemetry.addData("Range",  "%5.1f inches", desiredTag.ftcPose.range);
-                telemetry.addData("Bearing","%3.0f degrees", desiredTag.ftcPose.bearing);
+                telemetry.addData("cur Range",  "%5.1f inches", desiredTag.ftcPose.range);
+                telemetry.addData("Range - distance",  "%5.1f inches", desiredTag.ftcPose.range - 12f);
+                telemetry.addData("cur Bearing","%3.0f degrees", desiredTag.ftcPose.bearing);
+                telemetry.addData("Bearing - 25","%3.0f degrees", desiredTag.ftcPose.bearing - 25f);
+                double  rangeError   = (desiredTag.ftcPose.range - DESIRED_DISTANCE);
+                double  headingError = desiredTag.ftcPose.bearing - 25f;
+
+                // Use the speed and turn "gains" to calculate how we want the robot to move.  Clip it to the maximum
+                drive = Range.clip(rangeError * SPEED_GAIN * 10, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
+                turn  = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN) ;
+
+                telemetry.addData("Autonot","Drive %5.2f, Turn %5.2f", drive, turn);
             } else {
                 telemetry.addData("\n>","Drive using joysticks to find valid target\n");
             }
@@ -180,7 +190,7 @@ public class RobotAutoDriveToAprilTagTank extends LinearOpMode
 
                 // Determine heading and range error so we can use them to control the robot automatically.
                 double  rangeError   = (desiredTag.ftcPose.range - DESIRED_DISTANCE);
-                double  headingError = desiredTag.ftcPose.bearing;
+                double  headingError = desiredTag.ftcPose.bearing - 25f;
 
                 // Use the speed and turn "gains" to calculate how we want the robot to move.  Clip it to the maximum
                 drive = Range.clip(rangeError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
@@ -231,7 +241,10 @@ public class RobotAutoDriveToAprilTagTank extends LinearOpMode
      */
     private void initAprilTag() {
         // Create the AprilTag processor by using a builder.
-        aprilTag = new AprilTagProcessor.Builder().build();
+        aprilTag = new AprilTagProcessor.Builder()
+                .setLensIntrinsics(500.53, 500.53, 481.943, 283.426)
+
+                .build();
 
         // Adjust Image Decimation to trade-off detection-range for detection-rate.
         // e.g. Some typical detection data using a Logitech C920 WebCam
