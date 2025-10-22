@@ -145,6 +145,15 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
 
         while (opModeIsActive())
         {
+            Object colorcode = null;
+            if (blackboard.getOrDefault(Pattern, -1) == "21") {
+                colorcode = "GPP";
+            } else if (blackboard.getOrDefault(Pattern,  -1) == "22") {
+                colorcode = "PGP";
+            } else if (blackboard.getOrDefault(Pattern, -1) == "23") {
+                colorcode = "PPG";
+            }
+
             targetFound = false;
             desiredTag  = null;
             // Step through the list of detected tags and look for a matching tag
@@ -173,10 +182,9 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
                         telemetry.addData("Skipping", "Tag ID %d is not desired", detection.id);
                     }
                 } else {
+
                     // This tag is NOT in the library, so we don't have enough information to track to it.
                     telemetry.addData("Unknown", "Tag ID %d is not in TagLibrary", detection.id);
-                    telemetry.addData("Pattern blackboard id", ((Number) blackboard.get(Pattern)).intValue());
-
                 }
             }
 
@@ -215,10 +223,12 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
             } else {
 
                 // drive using manual POV Joystick mode.
-                drive = -gamepad1.left_stick_y  / 2.0;  // Reduce drive rate to 50%.
-                turn  = -gamepad1.right_stick_x / 4.0;  // Reduce turn rate to 25%.
+                drive = -gamepad1.left_stick_y * 0.75;  // Reduce drive rate to 75%.
+                turn  = -gamepad1.right_stick_x / 2.0;  // Reduce turn rate to 50%.
                 telemetry.addData("Manual","Drive %5.2f, Turn %5.2f", drive, turn);
             }
+            telemetry.addData("Pattern blackboard id", blackboard.get(Pattern));
+            telemetry.addData("Current Pattern: ", colorcode);
             telemetry.update();
 
             // Apply desired axes motions to the drivetrain.
@@ -247,14 +257,18 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
         }
 
         if (gamepad1.right_bumper) {
+            if (blackboard.get(Pattern) == null) {
+                return;
+            }
             int ptemp = (int) blackboard.get(Pattern);
-            if (ptemp + 1 <= 24) {
+            if (ptemp + 1 < 24) {
                 ptemp++;
             } else {
                 ptemp = 21;
             }
             blackboard.put(Pattern, ptemp);
             edited = true;
+            sleep(250);
         }
 
         // Send powers to the wheels.

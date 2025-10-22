@@ -98,7 +98,7 @@ public class settings_E extends LinearOpMode
         waitForStart();
 
         while (opModeIsActive()) {
-            boolean a = gamepad1.a;
+            boolean a = gamepad1.x;
             boolean b = gamepad1.b;
             if (a) {
                 blackboard.put(alince, 20);
@@ -113,7 +113,29 @@ public class settings_E extends LinearOpMode
             } else {
                 telemetry.addData("Team: ", "Red");
             }
-                telemetry.addData("Current Pattern: ", blackboard.getOrDefault(Pattern, 22));
+            Object colorcode = null;
+            if (blackboard.getOrDefault(Pattern, -1) == "21") {
+                colorcode = "GPP";
+            } else if (blackboard.getOrDefault(Pattern,  -1) == "22") {
+                colorcode = "PGP";
+            } else if (blackboard.getOrDefault(Pattern, -1) == "23") {
+                colorcode = "PPG";
+            }
+            telemetry.addData("Current Pattern: ", blackboard.getOrDefault(Pattern, 22));
+            telemetry.addData("Current Pattern: ", colorcode);
+            if (gamepad1.right_bumper) {
+                if (blackboard.get(Pattern) == null) {
+                    blackboard.put(Pattern, "21");
+                }
+                int ptemp = (int) blackboard.get(Pattern);
+                if (ptemp + 1 < 24) {
+                    ptemp++;
+                } else {
+                    ptemp = 21;
+                }
+                blackboard.put(Pattern, ptemp);
+                sleep(250);
+            }
             telemetry.update();
         }
     }
