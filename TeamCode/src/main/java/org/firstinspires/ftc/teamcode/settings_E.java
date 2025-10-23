@@ -113,20 +113,23 @@ public class settings_E extends LinearOpMode
             } else {
                 telemetry.addData("Team: ", "Red");
             }
+            if (blackboard.get(Pattern) == null) {
+                blackboard.put(Pattern, 21);
+            }
             Object colorcode = null;
-            if (blackboard.getOrDefault(Pattern, -1) == "21") {
+            if ((int) blackboard.getOrDefault(Pattern, -1) == 21) {
                 colorcode = "GPP";
-            } else if (blackboard.getOrDefault(Pattern,  -1) == "22") {
+            } else if ((int) blackboard.getOrDefault(Pattern,  -1) == 22) {
                 colorcode = "PGP";
-            } else if (blackboard.getOrDefault(Pattern, -1) == "23") {
+            } else if ((int) blackboard.getOrDefault(Pattern, -1) == 23) {
                 colorcode = "PPG";
+            } else {
+                colorcode = "E_67";
+                telemetry.addData("e", blackboard.getOrDefault(Pattern, -1));
             }
             telemetry.addData("Current Pattern: ", blackboard.getOrDefault(Pattern, 22));
             telemetry.addData("Current Pattern: ", colorcode);
             if (gamepad1.right_bumper) {
-                if (blackboard.get(Pattern) == null) {
-                    blackboard.put(Pattern, "21");
-                }
                 int ptemp = (int) blackboard.get(Pattern);
                 if (ptemp + 1 < 24) {
                     ptemp++;

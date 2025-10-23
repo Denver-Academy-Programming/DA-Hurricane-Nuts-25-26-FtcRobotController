@@ -31,6 +31,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
@@ -103,6 +104,12 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
     private DcMotor leftDrive   = null;  //  Used to control the left drive wheel
     private DcMotor rightDrive  = null;  //  Used to control the right drive wheel
 
+    private DcMotor luancher  = null;
+
+    private CRServo leftLoad = null;
+
+    private CRServo rightLoad = null;
+
     private static final boolean USE_WEBCAM = true;  // Set true to use a webcam, or false for a phone camera
     private VisionPortal visionPortal;               // Used to manage the video source.
     private AprilTagProcessor aprilTag;              // Used for managing the AprilTag detection process.
@@ -127,6 +134,9 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
         // step (using the FTC Robot Controller app on the phone).
         leftDrive  = hardwareMap.get(DcMotor.class, "frontLeftDrive");
         rightDrive = hardwareMap.get(DcMotor.class, "frontRightDrive");
+        luancher = hardwareMap.get(DcMotor.class, "launcherMotor");
+        leftLoad = hardwareMap.get(CRServo.class,"leftLoadServo");
+        rightLoad = hardwareMap.get(CRServo.class,"rightLoadServo");
 
         // To drive forward, most robots need the motor on one side to be reversed because the axles point in opposite directions.
         // When run, this OpMode should start both motors driving forward. So adjust these two lines based on your first test drive.
@@ -145,13 +155,19 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
 
         while (opModeIsActive())
         {
+            if (blackboard.get(Pattern) == null) {
+                blackboard.put(Pattern, 21);
+            }
             Object colorcode = null;
-            if (blackboard.getOrDefault(Pattern, -1) == "21") {
+            if ((int) blackboard.getOrDefault(Pattern, -1) == 21) {
                 colorcode = "GPP";
-            } else if (blackboard.getOrDefault(Pattern,  -1) == "22") {
+            } else if ((int) blackboard.getOrDefault(Pattern,  -1) == 22) {
                 colorcode = "PGP";
-            } else if (blackboard.getOrDefault(Pattern, -1) == "23") {
+            } else if ((int) blackboard.getOrDefault(Pattern, -1) == 23) {
                 colorcode = "PPG";
+            } else {
+                colorcode = "E_67";
+                telemetry.addData("e", blackboard.getOrDefault(Pattern, -1));
             }
 
             targetFound = false;
@@ -171,7 +187,7 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
                             if (!edited) {
                                 blackboard.put(Pattern, detection.id);
                             }
-                            telemetry.addData("Pattern blackboard id", ((Number) blackboard.get(Pattern)).intValue());
+                            telemetry.addData("Pattern blackboard id - live", detection.id);
                         } else {
                             targetFound = true;
                             desiredTag = detection;
@@ -223,12 +239,40 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
             } else {
 
                 // drive using manual POV Joystick mode.
-                drive = -gamepad1.left_stick_y * 0.75;  // Reduce drive rate to 75%.
+                drive = -gamepad1.left_stick_y / 2.0;  // Reduce drive rate to 50%.
                 turn  = -gamepad1.right_stick_x / 2.0;  // Reduce turn rate to 50%.
                 telemetry.addData("Manual","Drive %5.2f, Turn %5.2f", drive, turn);
             }
+
+            if (gamepad1.right_bumper) {
+                if (blackboard.get(Pattern) == null) {
+                    return;
+                }
+                int ptemp = (int) blackboard.get(Pattern);
+                if (ptemp + 1 < 24) {
+                    ptemp++;
+                } else {
+                    ptemp = 21;
+                }
+                blackboard.put(Pattern, ptemp);
+                edited = true;
+                sleep(250);
+            }
+
+            //Trigger launching
+            luancher.setPower(gamepad1.left_trigger);
+
+            //B for load
+            if (gamepad1.b) {
+                leftLoad.setPower(1);
+                rightLoad.setPower(1);
+            } else {
+                leftLoad.setPower(0);
+                rightLoad.setPower(0);
+            }
+
             telemetry.addData("Pattern blackboard id", blackboard.get(Pattern));
-            telemetry.addData("Current Pattern: ", colorcode);
+            telemetry.addData("Current Pattern code: ", colorcode);
             telemetry.update();
 
             // Apply desired axes motions to the drivetrain.
@@ -254,21 +298,6 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
         if (max >1.0) {
             leftPower /= max;
             rightPower /= max;
-        }
-
-        if (gamepad1.right_bumper) {
-            if (blackboard.get(Pattern) == null) {
-                return;
-            }
-            int ptemp = (int) blackboard.get(Pattern);
-            if (ptemp + 1 < 24) {
-                ptemp++;
-            } else {
-                ptemp = 21;
-            }
-            blackboard.put(Pattern, ptemp);
-            edited = true;
-            sleep(250);
         }
 
         // Send powers to the wheels.
