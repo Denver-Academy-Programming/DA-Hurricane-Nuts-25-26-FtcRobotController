@@ -33,7 +33,6 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -45,7 +44,6 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /*
  * This OpMode illustrates using a camera to locate and drive towards a specific AprilTag.
@@ -105,16 +103,9 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
     private DcMotor leftDrive   = null;  //  Used to control the left drive wheel
     private DcMotor rightDrive  = null;  //  Used to control the right drive wheel
 
-    private DcMotor luancher  = null;
-
-    private CRServo leftLoad = null;
-
-    private CRServo rightLoad = null;
-
     private static final boolean USE_WEBCAM = true;  // Set true to use a webcam, or false for a phone camera
     private VisionPortal visionPortal;               // Used to manage the video source.
     private AprilTagProcessor aprilTag;              // Used for managing the AprilTag detection process.
-    private AprilTagDetection desiredTag = null;     // Used to hold the data for a detected AprilTag
 
     public static final String Pattern = "Pattern";
     public static final String alince = "alince";
@@ -123,9 +114,9 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
 
     @Override public void runOpMode()
     {
-        boolean targetFound     = false;    // Set to true when an AprilTag target is detected
-        double  drive           = 0;        // Desired forward power/speed (-1 to +1) +ve is forward
-        double  turn            = 0;        // Desired turning power/speed (-1 to +1) +ve is CounterClockwise
+        boolean targetFound;    // Set to true when an AprilTag target is detected
+        double  drive;        // Desired forward power/speed (-1 to +1) +ve is forward
+        double  turn;        // Desired turning power/speed (-1 to +1) +ve is CounterClockwise
 
         // Initialize the Apriltag Detection process
         initAprilTag();
@@ -135,9 +126,9 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
         // step (using the FTC Robot Controller app on the phone).
         leftDrive  = hardwareMap.get(DcMotor.class, "frontLeftDrive");
         rightDrive = hardwareMap.get(DcMotor.class, "frontRightDrive");
-        luancher = hardwareMap.get(DcMotor.class, "launcherMotor");
-        leftLoad = hardwareMap.get(CRServo.class,"leftLoadServo");
-        rightLoad = hardwareMap.get(CRServo.class,"rightLoadServo");
+        DcMotor luancher = hardwareMap.get(DcMotor.class, "launcherMotor");
+        CRServo leftLoad = hardwareMap.get(CRServo.class, "leftLoadServo");
+        CRServo rightLoad = hardwareMap.get(CRServo.class, "rightLoadServo");
 
         // To drive forward, most robots need the motor on one side to be reversed because the axles point in opposite directions.
         // When run, this OpMode should start both motors driving forward. So adjust these two lines based on your first test drive.
@@ -149,7 +140,7 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
         luancher.setDirection(DcMotor.Direction.REVERSE);
 
         if (USE_WEBCAM)
-            setManualExposure(6, 250);  // Use low exposure time to reduce motion blur
+            setManualExposure();  // Use low exposure time to reduce motion blur
 
         // Wait for the driver to press Start
         telemetry.addData("Camera preview on/off", "3 dots, Camera Stream");
@@ -159,10 +150,8 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
 
         while (opModeIsActive())
         {
-            if (blackboard.get(Pattern) == null) {
-                blackboard.put(Pattern, 21);
-            }
-            Object colorcode = null;
+            blackboard.putIfAbsent(Pattern, 21);
+            Object colorcode;
             if ((int) blackboard.getOrDefault(Pattern, -1) == 21) {
                 colorcode = "GPP";
             } else if ((int) blackboard.getOrDefault(Pattern,  -1) == 22) {
@@ -175,7 +164,8 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
             }
 
             targetFound = false;
-            desiredTag  = null;
+            // Used to hold the data for a detected AprilTag
+            AprilTagDetection desiredTag = null;
             // Step through the list of detected tags and look for a matching tag
             List<AprilTagDetection> currentDetections = aprilTag.getDetections();
             for (AprilTagDetection detection : currentDetections) {
@@ -348,7 +338,7 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
      Manually set the camera gain and exposure.
      This can only be called AFTER calling initAprilTag(), and only works for Webcams;
     */
-    private void    setManualExposure(int exposureMS, int gain) {
+    private void    setManualExposure() {
         // Wait for the camera to be open, then use the controls
 
         if (visionPortal == null) {
@@ -374,10 +364,10 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
                 exposureControl.setMode(ExposureControl.Mode.Manual);
                 sleep(50);
             }
-            exposureControl.setExposure((long)exposureMS, TimeUnit.MILLISECONDS);
+            exposureControl.setExposure(6, TimeUnit.MILLISECONDS);
             sleep(20);
             GainControl gainControl = visionPortal.getCameraControl(GainControl.class);
-            gainControl.setGain(gain);
+            gainControl.setGain(250);
             sleep(20);
             telemetry.addData("Camera", "Ready");
             telemetry.update();
