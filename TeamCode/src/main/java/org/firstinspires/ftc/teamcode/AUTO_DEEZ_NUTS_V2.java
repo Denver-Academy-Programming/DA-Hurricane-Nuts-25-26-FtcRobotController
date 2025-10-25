@@ -30,11 +30,11 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.Range;
+
 import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
@@ -45,7 +45,6 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /*
  * This OpMode illustrates using a camera to locate and drive towards a specific AprilTag.
@@ -86,9 +85,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  */
 
-@TeleOp(name="OPMODE_DEEZ_NUTS_V2", group = "Concept")
+@Autonomous(name="AUTO_DEEZ_NUTS_V2", group = "Concept")
 //@Disabled
-public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
+public class AUTO_DEEZ_NUTS_V2 extends LinearOpMode
 {
     // Adjust these numbers to suit your robot.
     final double DESIRED_DISTANCE = 12.0; //  this is how close the camera should get to the target (inches)
@@ -153,137 +152,56 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
 
         // Wait for the driver to press Start
         telemetry.addData("Camera preview on/off", "3 dots, Camera Stream");
-        telemetry.addData(">", "Touch START to start OpMode");
+        telemetry.addData(">", "Touch START to start Auto");
         telemetry.update();
+        boolean wor = true;
         waitForStart();
 
-        while (opModeIsActive())
+        while (wor)
         {
-            if (blackboard.get(Pattern) == null) {
-                blackboard.put(Pattern, 21);
-            }
-            Object colorcode = null;
-            if ((int) blackboard.getOrDefault(Pattern, -1) == 21) {
-                colorcode = "GPP";
-            } else if ((int) blackboard.getOrDefault(Pattern,  -1) == 22) {
-                colorcode = "PGP";
-            } else if ((int) blackboard.getOrDefault(Pattern, -1) == 23) {
-                colorcode = "PPG";
-            } else {
-                colorcode = "E_67";
-                telemetry.addData("e", blackboard.getOrDefault(Pattern, -1));
-            }
-
-            targetFound = false;
-            desiredTag  = null;
-            // Step through the list of detected tags and look for a matching tag
-            List<AprilTagDetection> currentDetections = aprilTag.getDetections();
-            for (AprilTagDetection detection : currentDetections) {
-                // Look to see if we have size info on this tag.
-                if (detection.metadata != null) {
-                    //  Check to see if we want to track towards this tag.
-                    // Choose the tag you want to approach or set to -1 for ANY tag.
-                    int DESIRED_TAG_ID = (int) blackboard.getOrDefault(alince, -1);
-                    if ((DESIRED_TAG_ID < 0) || (detection.id == DESIRED_TAG_ID) || (detection.id == 21 || detection.id == 22 || detection.id == 23)) {
-                        // Yes, we want to use this tag.
-                        if ((detection.id == 21) || (detection.id == 22) || (detection.id == 23)) {
-
-                            if (!edited) {
-                                blackboard.put(Pattern, detection.id);
-                            }
-                            telemetry.addData("Pattern blackboard id - live", detection.id);
-                        } else {
-                            targetFound = true;
-                            desiredTag = detection;
-                            break;  // don't look any further.
-                        }
-                    } else {
-                        // This tag is in the library, but we do not want to track it right now.
-                        telemetry.addData("Skipping", "Tag ID %d is not desired", detection.id);
-                    }
-                } else {
-
-                    // This tag is NOT in the library, so we don't have enough information to track to it.
-                    telemetry.addData("Unknown", "Tag ID %d is not in TagLibrary", detection.id);
-                }
-            }
-
-            // Tell the driver what we see, and what to do.
-            if (targetFound) {
-                telemetry.addData("\n>","HOLD Left-Bumper to Drive to Target\n");
-                telemetry.addData("Found", "ID %d (%s)", desiredTag.id, desiredTag.metadata.name);
-                telemetry.addData("cur Range",  "%5.1f inches", desiredTag.ftcPose.range);
-                telemetry.addData("Range - distance",  "%5.1f inches", desiredTag.ftcPose.range - 12f);
-                telemetry.addData("cur Bearing","%3.0f degrees", desiredTag.ftcPose.bearing);
-                telemetry.addData("Bearing - 25","%3.0f degrees", desiredTag.ftcPose.bearing - 25f);
-                double  rangeError   = (desiredTag.ftcPose.range - DESIRED_DISTANCE);
-                double  headingError = desiredTag.ftcPose.bearing - 25f;
-
-                // Use the speed and turn "gains" to calculate how we want the robot to move.  Clip it to the maximum
-                drive = Range.clip(rangeError * SPEED_GAIN * 10, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
-                turn  = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN) ;
-
-                telemetry.addData("Autonot","Drive %5.2f, Turn %5.2f", drive, turn);
-            } else {
-                telemetry.addData("\n>","Drive using joysticks to find valid target\n");
-            }
-
-            // If Left Bumper is being pressed, AND we have found the desired target, Drive to target Automatically .
-            if (gamepad1.left_bumper && targetFound) {
-
-                // Determine heading and range error so we can use them to control the robot automatically.
-                double  rangeError   = (desiredTag.ftcPose.range - DESIRED_DISTANCE);
-                double  headingError = desiredTag.ftcPose.bearing - 25f;
-
-                // Use the speed and turn "gains" to calculate how we want the robot to move.  Clip it to the maximum
-                drive = Range.clip(rangeError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
-                turn  = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN) ;
-
-                telemetry.addData("Auto","Drive %5.2f, Turn %5.2f", drive, turn);
-            } else {
-
-                // drive using manual POV Joystick mode.
-                drive = -gamepad1.left_stick_y / 2.0;  // Reduce drive rate to 50%.
-                turn  = -gamepad1.right_stick_x / 2.0;  // Reduce turn rate to 50%.
-                telemetry.addData("Manual","Drive %5.2f, Turn %5.2f", drive, turn);
-            }
-
-            if (gamepad1.right_bumper) {
-                if (blackboard.get(Pattern) == null) {
-                    return;
-                }
-                int ptemp = (int) blackboard.get(Pattern);
-                if (ptemp + 1 < 24) {
-                    ptemp++;
-                } else {
-                    ptemp = 21;
-                }
-                blackboard.put(Pattern, ptemp);
-                edited = true;
-                sleep(250);
-            }
-
-            //Trigger launching
-            luancher.setPower(gamepad1.left_trigger);
-            telemetry.addData("trigger left power", gamepad1.left_trigger);
-            telemetry.addData("launcher power", luancher.getPower());
-
-            //B for load
-            if (gamepad1.b) {
-                leftLoad.setPower(1);
-                rightLoad.setPower(1);
-            } else {
-                leftLoad.setPower(0);
-                rightLoad.setPower(0);
-            }
-
-            telemetry.addData("Pattern blackboard id", blackboard.get(Pattern));
-            telemetry.addData("Current Pattern code: ", colorcode);
+            telemetry.addData("stage", ": 1");
+            telemetry.update();
+            luancher.setPower(1);
+            sleep(500);
+            telemetry.addData("stage", ": 2");
+            telemetry.update();
+            leftLoad.setPower(1);
+            rightLoad.setPower(1);
+            sleep(500);
+            telemetry.addData("stage", ": 3");
+            telemetry.update();
+            leftLoad.setPower(0);
+            rightLoad.setPower(0);
+            sleep(1000);
+            telemetry.addData("stage", ": 4");
+            telemetry.update();
+            leftLoad.setPower(1);
+            rightLoad.setPower(1);
+            sleep(500);
+            telemetry.addData("stage", ": 5");
+            telemetry.update();
+            leftLoad.setPower(0);
+            rightLoad.setPower(0);
+            sleep(1000);
+            telemetry.addData("stage", ": 6");
+            telemetry.update();
+            leftLoad.setPower(1);
+            rightLoad.setPower(1);
+            sleep(500);
+            telemetry.addData("stage", ": 7");
+            telemetry.update();
+            leftLoad.setPower(0);
+            rightLoad.setPower(0);
+            sleep(1000);
+            telemetry.addData("stage", ": 8");
+            telemetry.update();
+            luancher.setPower(0);
+            sleep(5000);
+            telemetry.addData("stage", ": 9");
             telemetry.update();
 
-            // Apply desired axes motions to the drivetrain.
-            moveRobot(drive, turn);
-            sleep(10);
+            wor = false;
+
         }
     }
 
