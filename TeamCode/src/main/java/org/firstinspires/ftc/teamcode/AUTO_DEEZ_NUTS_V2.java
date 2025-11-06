@@ -33,6 +33,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -95,8 +96,8 @@ public class AUTO_DEEZ_NUTS_V2 extends LinearOpMode
     private DcMotor leftDrive   = null;  //  Used to control the left drive wheel
     private DcMotor rightDrive  = null;  //  Used to control the right drive wheel
 
-    private static final boolean USE_WEBCAM = true;  // Set true to use a webcam, or false for a phone camera
-    private VisionPortal visionPortal;               // Used to manage the video source.
+//    private static final boolean USE_WEBCAM = true;  // Set true to use a webcam, or false for a phone camera
+//    private VisionPortal visionPortal;               // Used to manage the video source.
 
 
 
@@ -104,8 +105,7 @@ public class AUTO_DEEZ_NUTS_V2 extends LinearOpMode
     {
 
         // Initialize the Apriltag Detection process
-        initAprilTag();
-
+//
         // Initialize the hardware variables. Note that the strings used here as parameters
         // to 'get' must match the names assigned during the robot configuration.
         // step (using the FTC Robot Controller app on the phone).
@@ -124,135 +124,148 @@ public class AUTO_DEEZ_NUTS_V2 extends LinearOpMode
         rightLoad.setDirection(CRServo.Direction.REVERSE);
         luancher.setDirection(DcMotor.Direction.REVERSE);
 
-        if (USE_WEBCAM)
-            setManualExposure();  // Use low exposure time to reduce motion blur
+//        if (USE_WEBCAM)
+//            setManualExposure();  // Use low exposure time to reduce motion blur
 
         // Wait for the driver to press Start
-        telemetry.addData("Camera preview on/off", "3 dots, Camera Stream");
         telemetry.addData(">", "Touch START to start Auto");
         telemetry.update();
-        boolean wor = true;
         waitForStart();
 
-        while (wor)
-        {
-            telemetry.addData("stage", ": 1");
-            telemetry.update();
-            luancher.setPower(1);
-            sleep(500);
-            telemetry.addData("stage", ": 2");
-            telemetry.update();
-            leftLoad.setPower(1);
-            rightLoad.setPower(1);
-            sleep(500);
-            telemetry.addData("stage", ": 3");
-            telemetry.update();
-            leftLoad.setPower(0);
-            rightLoad.setPower(0);
-            sleep(1000);
-            telemetry.addData("stage", ": 4");
-            telemetry.update();
-            leftLoad.setPower(1);
-            rightLoad.setPower(1);
-            sleep(500);
-            telemetry.addData("stage", ": 5");
-            telemetry.update();
-            leftLoad.setPower(0);
-            rightLoad.setPower(0);
-            sleep(1000);
-            telemetry.addData("stage", ": 6");
-            telemetry.update();
-            leftLoad.setPower(1);
-            rightLoad.setPower(1);
-            sleep(500);
-            telemetry.addData("stage", ": 7");
-            telemetry.update();
-            leftLoad.setPower(0);
-            rightLoad.setPower(0);
-            sleep(1000);
-            telemetry.addData("stage", ": 8");
-            telemetry.update();
-            luancher.setPower(0);
-            sleep(5000);
-            telemetry.addData("stage", ": 9");
-            telemetry.update();
 
-            wor = false;
+//        telemetry.addData("STAGE 1", "start");
+//        telemetry.update();
+//        luancher.setPower(1);
+//        sleep(2000);
+//        rightLoad.setPower(1);
+//        leftLoad.setPower(1);
+//        sleep(250);
+//        rightLoad.setPower(0);
+//        leftLoad.setPower(0);
+//        sleep(500);
+//        luancher.setPower(0);
+//        telemetry.addData("STAGE 1", "done");
+//        telemetry.update();
+//        sleep(3000);
+//        telemetry.addData("STAGE 2", "start");
+//        telemetry.update();
+//        luancher.setPower(1);
+//        sleep(2000);
+//        rightLoad.setPower(1);
+//        leftLoad.setPower(1);
+//        sleep(250);
+//        rightLoad.setPower(0);
+//        leftLoad.setPower(0);
+//        sleep(500);
+//        luancher.setPower(0);
+//        telemetry.addData("STAGE 2", "done");
+//        telemetry.update();
+//        sleep(3000);
+//        telemetry.addData("STAGE 3", "start");
+//        telemetry.update();
+//        luancher.setPower(1);
+//        sleep(2000);
+//        rightLoad.setPower(1);
+//        leftLoad.setPower(1);
+//        sleep(250);
+//        rightLoad.setPower(0);
+//        leftLoad.setPower(0);
+//        sleep(500);
+//        luancher.setPower(0);
 
+
+
+        luancher.setPower(1);
+        for (int i = 0; i < 4; i++) {
+            telemetry.addData("STAGE ", String.valueOf(i), " start");
+            telemetry.update();
+            sleep(1000);
+            rightLoad.setPower(1);
+            leftLoad.setPower(1);
+            telemetry.update();
+            sleep(250);
+            rightLoad.setPower(0);
+            leftLoad.setPower(0);
+            telemetry.addData("STAGE ", String.valueOf(i), " done");
+            telemetry.update();
         }
+        luancher.setPower(0);
+
+
+
     }
 
     /**
      * Initialize the AprilTag processor.
      */
-    private void initAprilTag() {
-        // Create the AprilTag processor by using a builder.
-        // Used for managing the AprilTag detection process.
-        AprilTagProcessor aprilTag = new AprilTagProcessor.Builder()
-                .setLensIntrinsics(500.53, 500.53, 481.943, 283.426)
-
-                .build();
-
-        // Adjust Image Decimation to trade-off detection-range for detection-rate.
-        // e.g. Some typical detection data using a Logitech C920 WebCam
-        // Decimation = 1 ..  Detect 2" Tag from 10 feet away at 10 Frames per second
-        // Decimation = 2 ..  Detect 2" Tag from 6  feet away at 22 Frames per second
-        // Decimation = 3 ..  Detect 2" Tag from 4  feet away at 30 Frames Per Second
-        // Decimation = 3 ..  Detect 5" Tag from 10 feet away at 30 Frames Per Second
-        // Note: Decimation can be changed on-the-fly to adapt during a match.
-        aprilTag.setDecimation(2);
-
-        // Create the vision portal by using a builder.
-        if (USE_WEBCAM) {
-            visionPortal = new VisionPortal.Builder()
-                    .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
-                    .addProcessor(aprilTag)
-                    .build();
-        } else {
-            visionPortal = new VisionPortal.Builder()
-                    .setCamera(BuiltinCameraDirection.BACK)
-                    .addProcessor(aprilTag)
-                    .build();
-        }
-    }
-
-    /*
-     Manually set the camera gain and exposure.
-     This can only be called AFTER calling initAprilTag(), and only works for Webcams;
-    */
-    private void    setManualExposure() {
-        // Wait for the camera to be open, then use the controls
-
-        if (visionPortal == null) {
-            return;
-        }
-
-        // Make sure camera is streaming before we try to set the exposure controls
-        if (visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING) {
-            telemetry.addData("Camera", "Waiting");
-            telemetry.update();
-            while (!isStopRequested() && (visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING)) {
-                sleep(20);
-            }
-            telemetry.addData("Camera", "Ready");
-            telemetry.update();
-        }
-
-        // Set camera controls unless we are stopping.
-        if (!isStopRequested())
-        {
-            ExposureControl exposureControl = visionPortal.getCameraControl(ExposureControl.class);
-            if (exposureControl.getMode() != ExposureControl.Mode.Manual) {
-                exposureControl.setMode(ExposureControl.Mode.Manual);
-                sleep(50);
-            }
-            exposureControl.setExposure(6, TimeUnit.MILLISECONDS);
-            sleep(20);
-            GainControl gainControl = visionPortal.getCameraControl(GainControl.class);
-            gainControl.setGain(250);
-            sleep(20);
-            telemetry.addData("Camera", "Ready");
-            telemetry.update();
-        }
-    }
+//    private void initAprilTag() {
+//        // Create the AprilTag processor by using a builder.
+//        // Used for managing the AprilTag detection process.
+//        AprilTagProcessor aprilTag = new AprilTagProcessor.Builder()
+//                .setLensIntrinsics(500.53, 500.53, 481.943, 283.426)
+//
+//                .build();
+//
+//        // Adjust Image Decimation to trade-off detection-range for detection-rate.
+//        // e.g. Some typical detection data using a Logitech C920 WebCam
+//        // Decimation = 1 ..  Detect 2" Tag from 10 feet away at 10 Frames per second
+//        // Decimation = 2 ..  Detect 2" Tag from 6  feet away at 22 Frames per second
+//        // Decimation = 3 ..  Detect 2" Tag from 4  feet away at 30 Frames Per Second
+//        // Decimation = 3 ..  Detect 5" Tag from 10 feet away at 30 Frames Per Second
+//        // Note: Decimation can be changed on-the-fly to adapt during a match.
+//        aprilTag.setDecimation(2);
+//
+//        // Create the vision portal by using a builder.
+//        if (USE_WEBCAM) {
+//            visionPortal = new VisionPortal.Builder()
+//                    .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
+//                    .addProcessor(aprilTag)
+//                    .build();
+//        } else {
+//            visionPortal = new VisionPortal.Builder()
+//                    .setCamera(BuiltinCameraDirection.BACK)
+//                    .addProcessor(aprilTag)
+//                    .build();
+//        }
+//    }
+//
+//    /*
+//     Manually set the camera gain and exposure.
+//     This can only be called AFTER calling initAprilTag(), and only works for Webcams;
+//    */
+//    private void    setManualExposure() {
+//        // Wait for the camera to be open, then use the controls
+//
+//        if (visionPortal == null) {
+//            return;
+//        }
+//
+//        // Make sure camera is streaming before we try to set the exposure controls
+//        if (visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING) {
+//            telemetry.addData("Camera", "Waiting");
+//            telemetry.update();
+//            while (!isStopRequested() && (visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING)) {
+//                sleep(20);
+//            }
+//            telemetry.addData("Camera", "Ready");
+//            telemetry.update();
+//        }
+//
+//        // Set camera controls unless we are stopping.
+//        if (!isStopRequested())
+//        {
+//            ExposureControl exposureControl = visionPortal.getCameraControl(ExposureControl.class);
+//            if (exposureControl.getMode() != ExposureControl.Mode.Manual) {
+//                exposureControl.setMode(ExposureControl.Mode.Manual);
+//                sleep(50);
+//            }
+//            exposureControl.setExposure(6, TimeUnit.MILLISECONDS);
+//            sleep(20);
+//            GainControl gainControl = visionPortal.getCameraControl(GainControl.class);
+//            gainControl.setGain(250);
+//            sleep(20);
+//            telemetry.addData("Camera", "Ready");
+//            telemetry.update();
+//        }
+//    }
 }
