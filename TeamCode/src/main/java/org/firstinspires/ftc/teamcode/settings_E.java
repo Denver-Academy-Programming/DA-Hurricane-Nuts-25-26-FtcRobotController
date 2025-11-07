@@ -31,19 +31,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
-import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
-import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
-
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /*
  * This OpMode illustrates using a camera to locate and drive towards a specific AprilTag.
@@ -105,23 +93,23 @@ public class settings_E extends LinearOpMode
             } else if (b) {
                 blackboard.put(alince, 24);
             }
-            if (blackboard.get(alince) == null) {
-                blackboard.put(alince, 20);
-            }
+            blackboard.putIfAbsent(alince, 20);
+            //noinspection DataFlowIssue
             if ((int) blackboard.get(alince) == 20) {
                 telemetry.addData("Team: ", "Blue");
             } else {
                 telemetry.addData("Team: ", "Red");
             }
-            if (blackboard.get(Pattern) == null) {
-                blackboard.put(Pattern, 21);
-            }
-            Object colorcode = null;
+            blackboard.putIfAbsent(Pattern, 21);
+            Object colorcode;
+            //noinspection DataFlowIssue
             if ((int) blackboard.getOrDefault(Pattern, -1) == 21) {
                 colorcode = "GPP";
-            } else if ((int) blackboard.getOrDefault(Pattern,  -1) == 22) {
+            } else //noinspection DataFlowIssue
+                if ((int) blackboard.getOrDefault(Pattern,  -1) == 22) {
                 colorcode = "PGP";
-            } else if ((int) blackboard.getOrDefault(Pattern, -1) == 23) {
+            } else //noinspection DataFlowIssue
+                if ((int) blackboard.getOrDefault(Pattern, -1) == 23) {
                 colorcode = "PPG";
             } else {
                 colorcode = "E_67";
@@ -130,7 +118,7 @@ public class settings_E extends LinearOpMode
             telemetry.addData("Current Pattern: ", blackboard.getOrDefault(Pattern, 22));
             telemetry.addData("Current Pattern: ", colorcode);
             if (gamepad1.right_bumper) {
-                int ptemp = (int) blackboard.get(Pattern);
+                @SuppressWarnings("DataFlowIssue") int ptemp = (int) blackboard.get(Pattern);
                 if (ptemp + 1 < 24) {
                     ptemp++;
                 } else {

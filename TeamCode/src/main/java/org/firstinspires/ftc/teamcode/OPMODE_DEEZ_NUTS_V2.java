@@ -34,18 +34,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
-import com.qualcomm.robotcore.util.Range;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
-import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
-import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /*
  * This OpMode illustrates using a camera to locate and drive towards a specific AprilTag.
@@ -91,16 +80,16 @@ import java.util.concurrent.TimeUnit;
 public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
 {
     // Adjust these numbers to suit your robot.
-    final double DESIRED_DISTANCE = 12.0; //  this is how close the camera should get to the target (inches)
+//    final double DESIRED_DISTANCE = 12.0; //  this is how close the camera should get to the target (inches)
 
     //  Set the GAIN constants to control the relationship between the measured position error, and how much power is
     //  applied to the drive motors to correct the error.
     //  Drive = Error * Gain    Make these values smaller for smoother control, or larger for a more aggressive response.
-    final double SPEED_GAIN =   0.01 ;   //  Speed Control "Gain". e.g. Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
-    final double TURN_GAIN  =   0.01 ;   //  Turn Control "Gain".  e.g. Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
+//    final double SPEED_GAIN =   0.01 ;   //  Speed Control "Gain". e.g. Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
+//    final double TURN_GAIN  =   0.01 ;   //  Turn Control "Gain".  e.g. Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
 
-    final double MAX_AUTO_SPEED = 0.50;   //  Clip the approach speed to this max value (adjust for your robot)
-    final double MAX_AUTO_TURN  = 0.25;  //  Clip the turn speed to this max value (adjust for your robot)
+//    final double MAX_AUTO_SPEED = 0.50;   //  Clip the approach speed to this max value (adjust for your robot)
+//    final double MAX_AUTO_TURN  = 0.25;  //  Clip the turn speed to this max value (adjust for your robot)
 
     private DcMotor leftDrive   = null;  //  Used to control the left drive wheel
     private DcMotor rightDrive  = null;  //  Used to control the right drive wheel
@@ -111,22 +100,22 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
 //    private VisionPortal visionPortal;               // Used to manage the video source.
 //    private AprilTagProcessor aprilTag;              // Used for managing the AprilTag detection process.
 
-    public static final String Pattern = "Pattern";
-    public static final String alince = "alince";
+//    public static final String Pattern = "Pattern";
+//    public static final String alince = "alince";
 
 
-    public boolean edited;
+//    public boolean edited;
 
 
     private static final double TICKS_PER_REVOLUTION = 537.6; // Example value, check your motor's specs
-    private ElapsedTime timer = new ElapsedTime();
+    private final ElapsedTime timer = new ElapsedTime();
     private int lastPosition = 0;
     private double lastTime = 0.0;
 
 
     @Override public void runOpMode()
     {
-        boolean targetFound;    // Set to true when an AprilTag target is detected
+//        boolean targetFound;    // Set to true when an AprilTag target is detected
         double  drive;        // Desired forward power/speed (-1 to +1) +ve is forward
         double  turn;        // Desired turning power/speed (-1 to +1) +ve is CounterClockwise
 
@@ -158,25 +147,25 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
 //            setManualExposure();  // Use low exposure time to reduce motion blur
 
         // Wait for the driver to press Start
-        telemetry.addData("Camera preview on/off", "3 dots, Camera Stream");
+//        telemetry.addData("Camera preview on/off", "3 dots, Camera Stream");
         telemetry.addData(">", "Touch START to start OpMode");
         telemetry.update();
         waitForStart();
 
         while (opModeIsActive())
         {
-            blackboard.putIfAbsent(Pattern, 21);
-            Object colorcode;
-            if ((int) blackboard.getOrDefault(Pattern, -1) == 21) {
-                colorcode = "GPP";
-            } else if ((int) blackboard.getOrDefault(Pattern,  -1) == 22) {
-                colorcode = "PGP";
-            } else if ((int) blackboard.getOrDefault(Pattern, -1) == 23) {
-                colorcode = "PPG";
-            } else {
-                colorcode = "E_67";
-                telemetry.addData("e", blackboard.getOrDefault(Pattern, -1));
-            }
+//            blackboard.putIfAbsent(Pattern, 21);
+//            Object colorcode;
+//            if ((int) blackboard.getOrDefault(Pattern, -1) == 21) {
+//                colorcode = "GPP";
+//            } else if ((int) blackboard.getOrDefault(Pattern,  -1) == 22) {
+//                colorcode = "PGP";
+//            } else if ((int) blackboard.getOrDefault(Pattern, -1) == 23) {
+//                colorcode = "PPG";
+//            } else {
+//                colorcode = "E_67";
+//                telemetry.addData("e", blackboard.getOrDefault(Pattern, -1));
+//            }
 
 //            targetFound = false;
 //            // Used to hold the data for a detected AprilTag
@@ -254,20 +243,20 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
                 telemetry.addData("Manual","Drive %5.2f, Turn %5.2f", drive, turn);
 //            }
 
-            if (gamepad1.right_bumper) {
-                if (blackboard.get(Pattern) == null) {
-                    return;
-                }
-                int ptemp = (int) blackboard.get(Pattern);
-                if (ptemp + 1 < 24) {
-                    ptemp++;
-                } else {
-                    ptemp = 21;
-                }
-                blackboard.put(Pattern, ptemp);
-                edited = true;
-                sleep(250);
-            }
+//            if (gamepad1.right_bumper) {
+//                if (blackboard.get(Pattern) == null) {
+//                    return;
+//                }
+//                int ptemp = (int) blackboard.get(Pattern);
+//                if (ptemp + 1 < 24) {
+//                    ptemp++;
+//                } else {
+//                    ptemp = 21;
+//                }
+//                blackboard.put(Pattern, ptemp);
+//                edited = true;
+//                sleep(250);
+//            }
 
             //Trigger launching
             luancher.setPower(map(gamepad1.left_trigger, 0, 1, 0, 0.75));
@@ -288,8 +277,8 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
                 rightLoad.setPower(0);
             }
 
-            telemetry.addData("Pattern blackboard id", blackboard.get(Pattern));
-            telemetry.addData("Current Pattern code: ", colorcode);
+//            telemetry.addData("Pattern blackboard id", blackboard.get(Pattern));
+//            telemetry.addData("Current Pattern code: ", colorcode);
             telemetry.update();
 
             // Apply desired axes motions to the drivetrain.
@@ -351,17 +340,12 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
 
         // Calculate RPM
         double ticksPerSecond = positionChange / timeChange;
-        double rpm = (ticksPerSecond / TICKS_PER_REVOLUTION) * 60.0;
 
-        return rpm;
+        return (ticksPerSecond / TICKS_PER_REVOLUTION) * 60.0;
     }
 
 
-
-    /**
-     * Initialize the AprilTag processor.
-     */
-//    private void initAprilTag() {
+    //    private void initAprilTag() {
 //        // Create the AprilTag processor by using a builder.
 //        aprilTag = new AprilTagProcessor.Builder()
 //                .setLensIntrinsics(500.53, 500.53, 481.943, 283.426)

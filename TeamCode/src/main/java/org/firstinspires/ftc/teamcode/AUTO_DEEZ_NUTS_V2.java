@@ -33,16 +33,6 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-
-import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
-import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
-
-import java.util.concurrent.TimeUnit;
 
 /*
  * This OpMode illustrates using a camera to locate and drive towards a specific AprilTag.
@@ -93,10 +83,7 @@ public class AUTO_DEEZ_NUTS_V2 extends LinearOpMode
     //  applied to the drive motors to correct the error.
     //  Drive = Error * Gain    Make these values smaller for smoother control, or larger for a more aggressive response.
 
-    private DcMotor leftDrive   = null;  //  Used to control the left drive wheel
-    private DcMotor rightDrive  = null;  //  Used to control the right drive wheel
-
-//    private static final boolean USE_WEBCAM = true;  // Set true to use a webcam, or false for a phone camera
+    //    private static final boolean USE_WEBCAM = true;  // Set true to use a webcam, or false for a phone camera
 //    private VisionPortal visionPortal;               // Used to manage the video source.
 
 
@@ -109,8 +96,10 @@ public class AUTO_DEEZ_NUTS_V2 extends LinearOpMode
         // Initialize the hardware variables. Note that the strings used here as parameters
         // to 'get' must match the names assigned during the robot configuration.
         // step (using the FTC Robot Controller app on the phone).
-        leftDrive  = hardwareMap.get(DcMotor.class, "frontLeftDrive");
-        rightDrive = hardwareMap.get(DcMotor.class, "frontRightDrive");
+        //  Used to control the left drive wheel
+        DcMotor leftDrive = hardwareMap.get(DcMotor.class, "frontLeftDrive");
+        //  Used to control the right drive wheel
+        DcMotor rightDrive = hardwareMap.get(DcMotor.class, "frontRightDrive");
         DcMotor luancher = hardwareMap.get(DcMotor.class, "launcherMotor");
         CRServo leftLoad = hardwareMap.get(CRServo.class, "leftLoadServo");
         CRServo rightLoad = hardwareMap.get(CRServo.class, "rightLoadServo");
@@ -195,9 +184,6 @@ public class AUTO_DEEZ_NUTS_V2 extends LinearOpMode
 
     }
 
-    /**
-     * Initialize the AprilTag processor.
-     */
 //    private void initAprilTag() {
 //        // Create the AprilTag processor by using a builder.
 //        // Used for managing the AprilTag detection process.
