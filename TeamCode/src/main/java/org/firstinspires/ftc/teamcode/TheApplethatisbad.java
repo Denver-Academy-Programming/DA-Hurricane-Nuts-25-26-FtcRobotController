@@ -27,13 +27,24 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+
+//  https://www.perplexity.ai/search/i-want-to-use-ffmpeg-to-extrac-IK3qpcbkTEebabW5Fej_LA#11
+
+
 package org.firstinspires.ftc.teamcode;
 
+import com.antonkarpenko.ffmpegkit.FFmpegKit;
+import com.antonkarpenko.ffmpegkit.FFmpegSession;
+import com.antonkarpenko.ffmpegkit.ReturnCode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.antonkarpenko.*;
+import java.io.File;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 /*
@@ -75,9 +86,9 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  *
  */
 
-@TeleOp(name="OPMODE_DEEZ_NUTS_V2", group = "Concept")
+@TeleOp(name="TheApplethatisbad", group = "Concept")
 //@Disabled
-public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
+public class TheApplethatisbad extends LinearOpMode
 {
     // Adjust these numbers to suit your robot.
 //    final double DESIRED_DISTANCE = 12.0; //  this is how close the camera should get to the target (inches)
@@ -94,6 +105,9 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
     private DcMotor leftDrive   = null;  //  Used to control the left drive wheel
     private DcMotor rightDrive  = null;  //  Used to control the right drive wheel
     public int counter1 = -1;
+
+
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
 
 //    private static final boolean USE_WEBCAM = true;  // Set true to use a webcam, or false for a phone camera
@@ -237,11 +251,11 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
 //                telemetry.addData("Auto","Drive %5.2f, Turn %5.2f", drive, turn);
 //            } else {
 
-                // drive using manual POV Joystick mode.
-                drive = -gamepad1.left_stick_y / 2.0;  // Reduce drive rate to 50%.
-                turn  = -gamepad1.right_stick_x / 2.0;  // Reduce turn rate to 50%.
-                telemetry.addData("Manual stick","Drive %5.2f, Turn %5.2f", -gamepad1.left_stick_y, -gamepad1.right_stick_x);
-                telemetry.addData("Manual","Drive %5.2f, Turn %5.2f", drive, turn);
+            // drive using manual POV Joystick mode.
+            drive = -gamepad1.left_stick_y / 2.0;  // Reduce drive rate to 50%.
+            turn  = -gamepad1.right_stick_x / 2.0;  // Reduce turn rate to 50%.
+            telemetry.addData("Manual stick","Drive %5.2f, Turn %5.2f", -gamepad1.left_stick_y, -gamepad1.right_stick_x);
+            telemetry.addData("Manual","Drive %5.2f, Turn %5.2f", drive, turn);
 //            }
 
 //            if (gamepad1.right_bumper) {
@@ -280,6 +294,14 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
 
 //            telemetry.addData("Pattern blackboard id", blackboard.get(Pattern));
 //            telemetry.addData("Current Pattern code: ", colorcode);
+
+            extractFrameInBackground("badapple.mp4", "00:00:03.000", () -> {
+                // Optional completion callback, runs in background thread
+                deleteFrameFileInBackground("badapple.mp4");
+            });
+
+
+
             telemetry.update();
 
             // Apply desired axes motions to the drivetrain.
@@ -343,6 +365,46 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
         double ticksPerSecond = positionChange / timeChange;
 
         return (ticksPerSecond / TICKS_PER_REVOLUTION) * 60.0;
+    }
+
+    public void extractFrameInBackground(String videoPath, String timestamp, Runnable onComplete) {
+        executor.execute(() -> {
+            try {
+                File videoFile = new File(videoPath);
+                String dir = videoFile.getParent();
+                if (dir == null) dir = "/";
+                String outputImage = dir + "/frame.jpg";
+
+                String command = String.format("-i \"%s\" -ss %s -frames:v 1 \"%s\"", videoPath, timestamp, outputImage);
+                FFmpegSession session = FFmpegKit.execute(command);
+
+                boolean success = ReturnCode.isSuccess(session.getReturnCode());
+
+                if (onComplete != null) {
+                    onComplete.run();
+                }
+
+                // You can log or handle failures here if needed
+
+            } catch (Exception e) {
+                // Handle exception if needed
+                if (onComplete != null) {
+                    onComplete.run();
+                }
+            }
+        });
+    }
+
+    public void deleteFrameFileInBackground(String videoPath) {
+        executor.execute(() -> {
+            File videoFile = new File(videoPath);
+            String dir = videoFile.getParent();
+            if (dir == null) dir = "/";
+            File frameFile = new File(dir + "/frame.jpg");
+            if (frameFile.exists()) {
+                frameFile.delete();
+            }
+        });
     }
 
 
