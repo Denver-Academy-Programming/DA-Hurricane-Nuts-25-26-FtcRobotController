@@ -28,13 +28,14 @@
  */
 
 
-//  https://www.perplexity.ai/search/i-want-to-use-ffmpeg-to-extrac-IK3qpcbkTEebabW5Fej_LA#11
+//  https://www.perplexity.ai/search/i-want-to-use-ffmpeg-to-extrac-IK3qpcbkTEebabW5Fej_LA
 
 
 package org.firstinspires.ftc.teamcode;
 
 import com.antonkarpenko.ffmpegkit.FFmpegKit;
 import com.antonkarpenko.ffmpegkit.FFmpegSession;
+import com.antonkarpenko.ffmpegkit.FFprobeKit;
 import com.antonkarpenko.ffmpegkit.ReturnCode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -45,6 +46,20 @@ import com.antonkarpenko.*;
 import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import com.antonkarpenko.ffmpegkit.FFmpegKit;
+import com.antonkarpenko.ffmpegkit.FFmpegSession;
+import com.antonkarpenko.ffmpegkit.ReturnCode;
+import com.qualcomm.robotcore.util.RobotLog;
+import java.io.File;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 
 
 /*
@@ -90,391 +105,178 @@ import java.util.concurrent.Executors;
 //@Disabled
 public class TheApplethatisbad extends LinearOpMode
 {
-    // Adjust these numbers to suit your robot.
-//    final double DESIRED_DISTANCE = 12.0; //  this is how close the camera should get to the target (inches)
-
-    //  Set the GAIN constants to control the relationship between the measured position error, and how much power is
-    //  applied to the drive motors to correct the error.
-    //  Drive = Error * Gain    Make these values smaller for smoother control, or larger for a more aggressive response.
-//    final double SPEED_GAIN =   0.01 ;   //  Speed Control "Gain". e.g. Ramp up to 50% power at a 25 inch error.   (0.50 / 25.0)
-//    final double TURN_GAIN  =   0.01 ;   //  Turn Control "Gain".  e.g. Ramp up to 25% power at a 25 degree error. (0.25 / 25.0)
-
-//    final double MAX_AUTO_SPEED = 0.50;   //  Clip the approach speed to this max value (adjust for your robot)
-//    final double MAX_AUTO_TURN  = 0.25;  //  Clip the turn speed to this max value (adjust for your robot)
-
-    private DcMotor leftDrive   = null;  //  Used to control the left drive wheel
-    private DcMotor rightDrive  = null;  //  Used to control the right drive wheel
-    public int counter1 = -1;
 
 
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    public class FrameEmojiProcessor {
 
+        private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-//    private static final boolean USE_WEBCAM = true;  // Set true to use a webcam, or false for a phone camera
-//    private VisionPortal visionPortal;               // Used to manage the video source.
-//    private AprilTagProcessor aprilTag;              // Used for managing the AprilTag detection process.
+        public void processFrameAsEmojis(String videoFilename, String timestamp, int n, int m, Telemetry telemetry, Runnable onComplete) {
+            executor.execute(() -> {
+                try {
+                    File videoFile = new File(videoFilename);
+                    String dir = videoFile.getParent();
+                    if (dir == null) dir = "/";
+                    String outputImage = dir + "/frame.jpg";
 
-//    public static final String Pattern = "Pattern";
-//    public static final String alince = "alince";
+                    telemetry.addData("Status", "Extracting frame...");
+                    telemetry.update();
 
+                    FFmpegSession session = FFmpegKit.execute(String.format(
+                            "-i \"%s\" -ss %s -frames:v 1 \"%s\"", videoFilename, timestamp, outputImage));
 
-//    public boolean edited;
+                    if (!ReturnCode.isSuccess(session.getReturnCode())) {
+                        telemetry.addData("FFmpeg", "Failed to extract frame");
+                        telemetry.update();
+                        if (onComplete != null) onComplete.run();
+                        return;
+                    }
 
+                    telemetry.addData("Status", "Frame extracted, loading bitmap...");
+                    telemetry.update();
 
-    private static final double TICKS_PER_REVOLUTION = 537.6; // Example value, check your motor's specs
-    private final ElapsedTime timer = new ElapsedTime();
-    private int lastPosition = 0;
-    private double lastTime = 0.0;
+                    int[] colors = sampleColorsFromFrame(outputImage, n, m, telemetry);
+                    if (colors.length == 0) {
+                        telemetry.addData("Error", "Failed to sample colors");
+                        telemetry.update();
+                        if (onComplete != null) onComplete.run();
+                        return;
+                    }
 
+                    String[] emojis = EmojiColorMatcher.matchColorsToEmojis(colors);
+
+                    for (int y = 0; y < m; y++) {
+                        StringBuilder line = new StringBuilder();
+                        for (int x = 0; x < n; x++) {
+                            line.append(emojis[y * n + x]);
+                        }
+                        telemetry.addData("Row " + y, line.toString());
+                    }
+                    telemetry.update();
+
+                    File frameFile = new File(outputImage);
+                    if (frameFile.exists()) {
+                        boolean deleted = frameFile.delete();
+                        telemetry.addData("Cleanup", deleted ? "Deleted frame.jpg" : "Failed to delete frame.jpg");
+                        telemetry.update();
+                    }
+
+                } catch (Exception e) {
+                    telemetry.addData("Exception", e.toString());
+                    telemetry.update();
+                } finally {
+                    if (onComplete != null) onComplete.run();
+                }
+            });
+        }
+
+        private int[] sampleColorsFromFrame(String framePath, int n, int m, Telemetry telemetry) {
+            Bitmap bitmap = null;
+            try {
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inJustDecodeBounds = true;
+                BitmapFactory.decodeFile(framePath, options);
+                int reqWidth = 200;
+                int reqHeight = 200;
+                options.inSampleSize = calculateInSampleSize(options.outWidth, options.outHeight, reqWidth, reqHeight);
+                options.inJustDecodeBounds = false;
+
+                bitmap = BitmapFactory.decodeFile(framePath, options);
+                if (bitmap == null) {
+                    telemetry.addData("Bitmap", "Failed to decode image");
+                    telemetry.update();
+                    return new int[0];
+                }
+
+                int width = bitmap.getWidth();
+                int height = bitmap.getHeight();
+                telemetry.addData("Bitmap Size", width + "x" + height);
+                telemetry.update();
+
+                int[] colors = new int[n * m];
+                float stepX = (n == 1) ? 0 : (float)(width - 1) / (n - 1);
+                float stepY = (m == 1) ? 0 : (float)(height - 1) / (m - 1);
+
+                int index = 0;
+                for (int y = 0; y < m; y++) {
+                    int pixelY = Math.min(Math.round(y * stepY), height - 1);
+                    for (int x = 0; x < n; x++) {
+                        int pixelX = Math.min(Math.round(x * stepX), width - 1);
+                        colors[index++] = bitmap.getPixel(pixelX, pixelY);
+                    }
+                }
+                return colors;
+
+            } catch (Exception e) {
+                telemetry.addData("Bitmap Exception", e.toString());
+                telemetry.update();
+                return new int[0];
+            } finally {
+                if (bitmap != null) bitmap.recycle();
+            }
+        }
+
+        private int calculateInSampleSize(int origWidth, int origHeight, int reqWidth, int reqHeight) {
+            int inSampleSize = 1;
+            if (origHeight > reqHeight || origWidth > reqWidth) {
+                final int halfHeight = origHeight / 2;
+                final int halfWidth = origWidth / 2;
+                while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
+                    inSampleSize *= 2;
+                }
+            }
+            return inSampleSize;
+        }
+
+        public static class EmojiColorMatcher {
+            private static final String[] EMOJIS = {"⬛", "🟥", "🟧", "🟨", "🟩", "🟦", "🟪", "⬜"};
+            private static final int[] COLORS = {
+                    Color.rgb(0, 0, 0), Color.rgb(255, 0, 0), Color.rgb(255, 165, 0), Color.rgb(255, 255, 0),
+                    Color.rgb(0, 128, 0), Color.rgb(0, 0, 255), Color.rgb(128, 0, 128), Color.rgb(255, 255, 255)
+            };
+
+            private static int colorDistance(int c1, int c2) {
+                int dr = Color.red(c1) - Color.red(c2);
+                int dg = Color.green(c1) - Color.green(c2);
+                int db = Color.blue(c1) - Color.blue(c2);
+                return dr * dr + dg * dg + db * db;
+            }
+
+            public static String[] matchColorsToEmojis(int[] pixelColors) {
+                String[] matched = new String[pixelColors.length];
+                for (int i = 0; i < pixelColors.length; i++) {
+                    int minDist = Integer.MAX_VALUE, bestIdx = 0;
+                    for (int j = 0; j < COLORS.length; j++) {
+                        int dist = colorDistance(pixelColors[i], COLORS[j]);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            bestIdx = j;
+                        }
+                    }
+                    matched[i] = EMOJIS[bestIdx];
+                }
+                return matched;
+            }
+        }
+    }
 
 
     @Override public void runOpMode()
     {
-//        boolean targetFound;    // Set to true when an AprilTag target is detected
-        double  drive;        // Desired forward power/speed (-1 to +1) +ve is forward
-        double  turn;        // Desired turning power/speed (-1 to +1) +ve is CounterClockwise
 
-
-
-
-        // Initialize the Apriltag Detection process
-//        initAprilTag();
-
-        // Initialize the hardware variables. Note that the strings used here as parameters
-        // to 'get' must match the names assigned during the robot configuration.
-        // step (using the FTC Robot Controller app on the phone).
-        leftDrive  = hardwareMap.get(DcMotor.class, "frontLeftDrive");
-        rightDrive = hardwareMap.get(DcMotor.class, "frontRightDrive");
-        DcMotor luancher = hardwareMap.get(DcMotor.class, "launcherMotor");
-        CRServo leftLoad = hardwareMap.get(CRServo.class, "leftLoadServo");
-        CRServo rightLoad = hardwareMap.get(CRServo.class, "rightLoadServo");
-
-        // To drive forward, most robots need the motor on one side to be reversed because the axles point in opposite directions.
-        // When run, this OpMode should start both motors driving forward. So adjust these two lines based on your first test drive.
-        // Note: The settings here assume direct drive on left and right wheels.  Single Gear Reduction or 90 Deg drives may require direction flips
-        leftDrive.setDirection(DcMotor.Direction.REVERSE);
-        rightDrive.setDirection(DcMotor.Direction.FORWARD);
-
-        rightLoad.setDirection(CRServo.Direction.REVERSE);
-        luancher.setDirection(DcMotor.Direction.REVERSE);
-
-//        if (USE_WEBCAM)
-//            setManualExposure();  // Use low exposure time to reduce motion blur
-
-        // Wait for the driver to press Start
-//        telemetry.addData("Camera preview on/off", "3 dots, Camera Stream");
         telemetry.addData(">", "Touch START to start OpMode");
         telemetry.update();
         waitForStart();
 
         while (opModeIsActive())
         {
-//            blackboard.putIfAbsent(Pattern, 21);
-//            Object colorcode;
-//            if ((int) blackboard.getOrDefault(Pattern, -1) == 21) {
-//                colorcode = "GPP";
-//            } else if ((int) blackboard.getOrDefault(Pattern,  -1) == 22) {
-//                colorcode = "PGP";
-//            } else if ((int) blackboard.getOrDefault(Pattern, -1) == 23) {
-//                colorcode = "PPG";
-//            } else {
-//                colorcode = "E_67";
-//                telemetry.addData("e", blackboard.getOrDefault(Pattern, -1));
-//            }
-
-//            targetFound = false;
-//            // Used to hold the data for a detected AprilTag
-//            AprilTagDetection desiredTag = null;
-//            // Step through the list of detected tags and look for a matching tag
-//            List<AprilTagDetection> currentDetections = aprilTag.getDetections();
-//            for (AprilTagDetection detection : currentDetections) {
-//                // Look to see if we have size info on this tag.
-//                if (detection.metadata != null) {
-//                    //  Check to see if we want to track towards this tag.
-//                    // Choose the tag you want to approach or set to -1 for ANY tag.
-//                    int DESIRED_TAG_ID = (int) blackboard.getOrDefault(alince, -1);
-//                    if ((DESIRED_TAG_ID < 0) || (detection.id == DESIRED_TAG_ID) || (detection.id == 21 || detection.id == 22 || detection.id == 23)) {
-//                        // Yes, we want to use this tag.
-//                        if ((detection.id == 21) || (detection.id == 22) || (detection.id == 23)) {
-//
-//                            if (!edited) {
-//                                blackboard.put(Pattern, detection.id);
-//                            }
-//                            telemetry.addData("Pattern blackboard id - live", detection.id);
-//                        } else {
-//                            targetFound = true;
-//                            desiredTag = detection;
-//                            break;  // don't look any further.
-//                        }
-//                    } else {
-//                        // This tag is in the library, but we do not want to track it right now.
-//                        telemetry.addData("Skipping", "Tag ID %d is not desired", detection.id);
-//                    }
-//                } else {
-//
-//                    // This tag is NOT in the library, so we don't have enough information to track to it.
-//                    telemetry.addData("Unknown", "Tag ID %d is not in TagLibrary", detection.id);
-//                }
-//            }
-//
-//            // Tell the driver what we see, and what to do.
-//            if (targetFound) {
-//                telemetry.addData("\n>","HOLD Left-Bumper to Drive to Target\n");
-//                telemetry.addData("Found", "ID %d (%s)", desiredTag.id, desiredTag.metadata.name);
-//                telemetry.addData("cur Range",  "%5.1f inches", desiredTag.ftcPose.range);
-//                telemetry.addData("Range - distance",  "%5.1f inches", desiredTag.ftcPose.range - 12f);
-//                telemetry.addData("cur Bearing","%3.0f degrees", desiredTag.ftcPose.bearing);
-//                telemetry.addData("Bearing - 25","%3.0f degrees", desiredTag.ftcPose.bearing - 25f);
-//                double  rangeError   = (desiredTag.ftcPose.range - DESIRED_DISTANCE);
-//                double  headingError = desiredTag.ftcPose.bearing - 25f;
-//
-//                // Use the speed and turn "gains" to calculate how we want the robot to move.  Clip it to the maximum
-//                drive = Range.clip(rangeError * SPEED_GAIN * 10, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
-//                turn  = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN) ;
-//
-//                telemetry.addData("Autonot","Drive %5.2f, Turn %5.2f", drive, turn);
-//            } else {
-//                telemetry.addData("\n>","Drive using joysticks to find valid target\n");
-//            }
-//
-//            // If Left Bumper is being pressed, AND we have found the desired target, Drive to target Automatically .
-//            if (gamepad1.left_bumper && targetFound) {
-//
-//                // Determine heading and range error so we can use them to control the robot automatically.
-//                double  rangeError   = (desiredTag.ftcPose.range - DESIRED_DISTANCE);
-//                double  headingError = desiredTag.ftcPose.bearing - 25f;
-//
-//                // Use the speed and turn "gains" to calculate how we want the robot to move.  Clip it to the maximum
-//                drive = Range.clip(rangeError * SPEED_GAIN, -MAX_AUTO_SPEED, MAX_AUTO_SPEED);
-//                turn  = Range.clip(headingError * TURN_GAIN, -MAX_AUTO_TURN, MAX_AUTO_TURN) ;
-//
-//                telemetry.addData("Auto","Drive %5.2f, Turn %5.2f", drive, turn);
-//            } else {
-
-            // drive using manual POV Joystick mode.
-            drive = -gamepad1.left_stick_y / 2.0;  // Reduce drive rate to 50%.
-            turn  = -gamepad1.right_stick_x / 2.0;  // Reduce turn rate to 50%.
-            telemetry.addData("Manual stick","Drive %5.2f, Turn %5.2f", -gamepad1.left_stick_y, -gamepad1.right_stick_x);
-            telemetry.addData("Manual","Drive %5.2f, Turn %5.2f", drive, turn);
-//            }
-
-//            if (gamepad1.right_bumper) {
-//                if (blackboard.get(Pattern) == null) {
-//                    return;
-//                }
-//                int ptemp = (int) blackboard.get(Pattern);
-//                if (ptemp + 1 < 24) {
-//                    ptemp++;
-//                } else {
-//                    ptemp = 21;
-//                }
-//                blackboard.put(Pattern, ptemp);
-//                edited = true;
-//                sleep(250);
-//            }
-
-            //Trigger launching
-            luancher.setPower(map(gamepad1.left_trigger, 0, 1, 0, 0.75));
-            telemetry.addData("trigger left power", map(gamepad1.left_trigger, 0, 1, 0, 0.75));
-            telemetry.addData("launcher power", luancher.getPower());
-            telemetry.addData("RPM: ", calculateRpmManual(luancher));
-
-            //B for load
-            counter1 = counter1 + 1;
-            telemetry.addData("counter ##: ", counter1);
-            if (gamepad1.b && (counter1 >= 100)) {
-                leftLoad.setPower(1);
-                rightLoad.setPower(1);
-                sleep(250);
-                counter1 = 0;
-            } else {
-                leftLoad.setPower(0);
-                rightLoad.setPower(0);
-            }
-
-//            telemetry.addData("Pattern blackboard id", blackboard.get(Pattern));
-//            telemetry.addData("Current Pattern code: ", colorcode);
-
-            extractFrameInBackground("badapple.mp4", "00:00:03.000", () -> {
-                // Optional completion callback, runs in background thread
-                deleteFrameFileInBackground("badapple.mp4");
-            });
 
 
 
             telemetry.update();
-
-            // Apply desired axes motions to the drivetrain.
-            moveRobot(drive, turn);
             sleep(10);
         }
     }
 
-    /**
-     * Move robot according to desired axes motions
-     * <p>
-     * Positive X is forward
-     * <p>
-     * Positive Yaw is counter-clockwise
-     */
-    public void moveRobot(double x, double yaw) {
-        // Calculate left and right wheel powers.
-        double leftPower    = x - yaw;
-        double rightPower   = x + yaw;
 
-        // Normalize wheel powers to be less than 1.0
-        double max = Math.max(Math.abs(leftPower), Math.abs(rightPower));
-        if (max >1.0) {
-            leftPower /= max;
-            rightPower /= max;
-        }
-
-        // Send powers to the wheels.
-        leftDrive.setPower(leftPower);
-        rightDrive.setPower(rightPower);
-    }
-
-    public static double map(double inputValue, double inputStart, double inputEnd, double outputStart, double outputEnd) {
-        // Handle potential division by zero if inputStart and inputEnd are the same
-        if (inputStart == inputEnd) {
-            // If the input range is a single point, the output is also a single point (outputStart)
-            return outputStart;
-        }
-        return outputStart + (outputEnd - outputStart) * ((inputValue - inputStart) / (inputEnd - inputStart));
-    }
-
-
-    public double calculateRpmManual(DcMotor motor) {
-        int currentPosition = motor.getCurrentPosition();
-        double currentTime = timer.seconds();
-
-        // Calculate change in position and time
-        int positionChange = currentPosition - lastPosition;
-        double timeChange = currentTime - lastTime;
-
-        // Update last position and time for the next iteration
-        lastPosition = currentPosition;
-        lastTime = currentTime;
-
-        // Avoid division by zero if time change is too small
-        if (timeChange == 0) {
-            return 0.0;
-        }
-
-        // Calculate RPM
-        double ticksPerSecond = positionChange / timeChange;
-
-        return (ticksPerSecond / TICKS_PER_REVOLUTION) * 60.0;
-    }
-
-    public void extractFrameInBackground(String videoPath, String timestamp, Runnable onComplete) {
-        executor.execute(() -> {
-            try {
-                File videoFile = new File(videoPath);
-                String dir = videoFile.getParent();
-                if (dir == null) dir = "/";
-                String outputImage = dir + "/frame.jpg";
-
-                String command = String.format("-i \"%s\" -ss %s -frames:v 1 \"%s\"", videoPath, timestamp, outputImage);
-                FFmpegSession session = FFmpegKit.execute(command);
-
-                boolean success = ReturnCode.isSuccess(session.getReturnCode());
-
-                if (onComplete != null) {
-                    onComplete.run();
-                }
-
-                // You can log or handle failures here if needed
-
-            } catch (Exception e) {
-                // Handle exception if needed
-                if (onComplete != null) {
-                    onComplete.run();
-                }
-            }
-        });
-    }
-
-    public void deleteFrameFileInBackground(String videoPath) {
-        executor.execute(() -> {
-            File videoFile = new File(videoPath);
-            String dir = videoFile.getParent();
-            if (dir == null) dir = "/";
-            File frameFile = new File(dir + "/frame.jpg");
-            if (frameFile.exists()) {
-                frameFile.delete();
-            }
-        });
-    }
-
-
-    //    private void initAprilTag() {
-//        // Create the AprilTag processor by using a builder.
-//        aprilTag = new AprilTagProcessor.Builder()
-//                .setLensIntrinsics(500.53, 500.53, 481.943, 283.426)
-//
-//                .build();
-//
-//        // Adjust Image Decimation to trade-off detection-range for detection-rate.
-//        // e.g. Some typical detection data using a Logitech C920 WebCam
-//        // Decimation = 1 ..  Detect 2" Tag from 10 feet away at 10 Frames per second
-//        // Decimation = 2 ..  Detect 2" Tag from 6  feet away at 22 Frames per second
-//        // Decimation = 3 ..  Detect 2" Tag from 4  feet away at 30 Frames Per Second
-//        // Decimation = 3 ..  Detect 5" Tag from 10 feet away at 30 Frames Per Second
-//        // Note: Decimation can be changed on-the-fly to adapt during a match.
-//        aprilTag.setDecimation(2);
-//
-//        // Create the vision portal by using a builder.
-//        if (USE_WEBCAM) {
-//            visionPortal = new VisionPortal.Builder()
-//                    .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
-//                    .addProcessor(aprilTag)
-//                    .build();
-//        } else {
-//            visionPortal = new VisionPortal.Builder()
-//                    .setCamera(BuiltinCameraDirection.BACK)
-//                    .addProcessor(aprilTag)
-//                    .build();
-//        }
-//    }
-//
-//    /*
-//     Manually set the camera gain and exposure.
-//     This can only be called AFTER calling initAprilTag(), and only works for Webcams;
-//    */
-//    private void    setManualExposure() {
-//        // Wait for the camera to be open, then use the controls
-//
-//        if (visionPortal == null) {
-//            return;
-//        }
-//
-//        // Make sure camera is streaming before we try to set the exposure controls
-//        if (visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING) {
-//            telemetry.addData("Camera", "Waiting");
-//            telemetry.update();
-//            while (!isStopRequested() && (visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING)) {
-//                sleep(20);
-//            }
-//            telemetry.addData("Camera", "Ready");
-//            telemetry.update();
-//        }
-//
-//        // Set camera controls unless we are stopping.
-//        if (!isStopRequested())
-//        {
-//            ExposureControl exposureControl = visionPortal.getCameraControl(ExposureControl.class);
-//            if (exposureControl.getMode() != ExposureControl.Mode.Manual) {
-//                exposureControl.setMode(ExposureControl.Mode.Manual);
-//                sleep(50);
-//            }
-//            exposureControl.setExposure(6, TimeUnit.MILLISECONDS);
-//            sleep(20);
-//            GainControl gainControl = visionPortal.getCameraControl(GainControl.class);
-//            gainControl.setGain(250);
-//            sleep(20);
-//            telemetry.addData("Camera", "Ready");
-//            telemetry.update();
-//        }
-//    }
 }
