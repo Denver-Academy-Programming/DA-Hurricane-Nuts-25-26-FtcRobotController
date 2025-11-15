@@ -33,7 +33,10 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorImplEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 
 /*
@@ -107,13 +110,6 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
 //    public boolean edited;
 
 
-    private static final double TICKS_PER_REVOLUTION = 537.6; // Example value, check your motor's specs
-    private final ElapsedTime timer = new ElapsedTime();
-    private int lastPosition = 0;
-    private double lastTime = 0.0;
-
-
-
     @Override public void runOpMode()
     {
 //        boolean targetFound;    // Set to true when an AprilTag target is detected
@@ -129,9 +125,9 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
         // Initialize the hardware variables. Note that the strings used here as parameters
         // to 'get' must match the names assigned during the robot configuration.
         // step (using the FTC Robot Controller app on the phone).
-        leftDrive  = hardwareMap.get(DcMotor.class, "frontLeftDrive");
-        rightDrive = hardwareMap.get(DcMotor.class, "frontRightDrive");
-        DcMotor luancher = hardwareMap.get(DcMotor.class, "launcherMotor");
+        leftDrive  = hardwareMap.get(DcMotorImplEx.class, "frontLeftDrive");
+        rightDrive = hardwareMap.get(DcMotorImplEx.class, "frontRightDrive");
+        DcMotorImplEx luancher = hardwareMap.get(DcMotorImplEx.class, "launcherMotor");
         CRServo leftLoad = hardwareMap.get(CRServo.class, "leftLoadServo");
         CRServo rightLoad = hardwareMap.get(CRServo.class, "rightLoadServo");
 
@@ -144,12 +140,15 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
         rightLoad.setDirection(CRServo.Direction.REVERSE);
         luancher.setDirection(DcMotor.Direction.REVERSE);
 
+        luancher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
 //        if (USE_WEBCAM)
 //            setManualExposure();  // Use low exposure time to reduce motion blur
 
         // Wait for the driver to press Start
 //        telemetry.addData("Camera preview on/off", "3 dots, Camera Stream");
         telemetry.addData(">", "Touch START to start OpMode");
+        telemetry.addData("MEIOAHOOFoiujkbhfukjdsmgyhfuz", "🟥🟧🟨🟩🟦🟪⬜");
         telemetry.update();
         waitForStart();
 
@@ -260,8 +259,13 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
 //            }
 
             //Trigger launching
-            luancher.setPower(map(gamepad1.left_trigger, 0, 1, 0, 0.75));
-            telemetry.addData("trigger left power", map(gamepad1.left_trigger, 0, 1, 0, 0.75));
+            if (gamepad1.dpad_down) {
+                luancher.setPower(1);
+                telemetry.addData("trigger left power", "nul");
+            } else {
+                luancher.setPower(map(gamepad1.left_trigger, 0, 1, 0, 0.75));
+                telemetry.addData("trigger left power", map(gamepad1.left_trigger, 0, 1, 0, 0.75));
+            }
             telemetry.addData("launcher power", luancher.getPower());
             telemetry.addData("RPM: ", calculateRpmManual(luancher));
 
@@ -322,27 +326,16 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
     }
 
 
-    public double calculateRpmManual(DcMotor motor) {
-        int currentPosition = motor.getCurrentPosition();
-        double currentTime = timer.seconds();
+    public double calculateRpmManual(DcMotorImplEx motor) {
+        double tick_per_rev = 560;
+        double ticksPerSecond = motor.getVelocity();
+        double revolutionsPerSecond = ticksPerSecond / tick_per_rev;
+        double RPM = revolutionsPerSecond * 60;
+        telemetry.addData("ticksPerSecond", ticksPerSecond);
+        telemetry.addData("revolutionsPerSecond", revolutionsPerSecond);
+        telemetry.addData("RPMggg", RPM);
 
-        // Calculate change in position and time
-        int positionChange = currentPosition - lastPosition;
-        double timeChange = currentTime - lastTime;
-
-        // Update last position and time for the next iteration
-        lastPosition = currentPosition;
-        lastTime = currentTime;
-
-        // Avoid division by zero if time change is too small
-        if (timeChange == 0) {
-            return 0.0;
-        }
-
-        // Calculate RPM
-        double ticksPerSecond = positionChange / timeChange;
-
-        return (ticksPerSecond / TICKS_PER_REVOLUTION) * 60.0;
+        return RPM;
     }
 
 
