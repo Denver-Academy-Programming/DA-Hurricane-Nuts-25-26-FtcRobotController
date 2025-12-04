@@ -259,13 +259,13 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
 //            }
 
             //Trigger launching
-            if (gamepad1.dpad_down) {
-                luancher.setPower(1);
-                telemetry.addData("trigger left power", "nul");
-            } else {
-                luancher.setPower(map(gamepad1.left_trigger, 0, 1, 0, 0.75));
-                telemetry.addData("trigger left power", map(gamepad1.left_trigger, 0, 1, 0, 0.75));
-            }
+            //if (gamepad1.dpad_down) {
+                //luancher.setPower(1);
+                //telemetry.addData("trigger left power", "nul");
+            //} else {
+                luancher.setPower(map(gamepad1.left_trigger, 0, 1, 0, 0.6));
+                telemetry.addData("trigger left power", map(gamepad1.left_trigger, 0, 1, 0, 0.6));
+            //}
             telemetry.addData("launcher power", luancher.getPower());
             telemetry.addData("RPM: ", calculateRpmManual(luancher));
 
@@ -315,8 +315,8 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
         leftDrive.setPower(leftPower);
         rightDrive.setPower(rightPower);
     }
-
     public static double map(double inputValue, double inputStart, double inputEnd, double outputStart, double outputEnd) {
+
         // Handle potential division by zero if inputStart and inputEnd are the same
         if (inputStart == inputEnd) {
             // If the input range is a single point, the output is also a single point (outputStart)
