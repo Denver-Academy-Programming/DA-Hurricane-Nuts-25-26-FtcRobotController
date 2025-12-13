@@ -259,13 +259,13 @@ public class OPMODE_DEEZ_NUTS_V2 extends LinearOpMode
 //            }
 
             //Trigger launching
-            //if (gamepad1.dpad_down) {
-                //luancher.setPower(1);
-                //telemetry.addData("trigger left power", "nul");
-            //} else {
-                luancher.setPower(map(gamepad1.left_trigger, 0, 1, 0, 0.6));
-                telemetry.addData("trigger left power", map(gamepad1.left_trigger, 0, 1, 0, 0.6));
-            //}
+            if (gamepad1.dpad_down) {
+                luancher.setPower(1);
+                telemetry.addData("trigger left power", "nul");
+            } else {
+                luancher.setPower(map(gamepad1.left_trigger, 0, 1, 0, 0.35));
+                telemetry.addData("trigger left power", map(gamepad1.left_trigger, 0, 1, 0, 0.4));
+            }
             telemetry.addData("launcher power", luancher.getPower());
             telemetry.addData("RPM: ", calculateRpmManual(luancher));
 

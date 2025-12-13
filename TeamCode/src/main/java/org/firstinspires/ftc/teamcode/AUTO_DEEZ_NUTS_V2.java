@@ -33,6 +33,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 /*
  * This OpMode illustrates using a camera to locate and drive towards a specific AprilTag.
@@ -162,13 +163,19 @@ public class AUTO_DEEZ_NUTS_V2 extends LinearOpMode
 //        sleep(500);
 //        luancher.setPower(0);
 
-
-
-        luancher.setPower(1);
-        for (int i = 0; i < 4; i++) {
+        rightDrive.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        leftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightDrive.setPower(-0.2);
+        leftDrive.setPower(-0.2);
+        sleep(500);
+        rightDrive.setPower(0);
+        leftDrive.setPower(0);
+        double po = 0.67;
+        luancher.setPower(po);
+        for (int i = 0; i < 6; i++) {
             telemetry.addData("STAGE ", String.valueOf(i), " start");
             telemetry.update();
-            sleep(1000);
+            sleep(2000);
             rightLoad.setPower(1);
             leftLoad.setPower(1);
             telemetry.update();
@@ -179,6 +186,16 @@ public class AUTO_DEEZ_NUTS_V2 extends LinearOpMode
             telemetry.update();
         }
         luancher.setPower(0);
+        rightDrive.setPower(-1);
+        leftDrive.setPower(-1);
+        sleep(1000);
+        rightDrive.setPower(-0.5);
+        leftDrive.setPower(-0.5);
+        sleep(990);
+        rightDrive.setPower(0);
+        leftDrive.setPower(0);
+
+
 
 
 
